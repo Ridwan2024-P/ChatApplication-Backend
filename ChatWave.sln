@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatWave.API", "ChatWave.API\ChatWave.API.csproj", "{03C3BAB1-E624-4958-A112-1FF7AD954A02}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatWave.Business", "ChatWave.Business\ChatWave.Business.csproj", "{CEDED8C3-2731-449D-B54E-835D852BA6B5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatWave.Data", "ChatWave.Data\ChatWave.Data.csproj", "{853146CF-AB2D-443F-8838-661CCFDC776C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{03C3BAB1-E624-4958-A112-1FF7AD954A02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{03C3BAB1-E624-4958-A112-1FF7AD954A02}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{03C3BAB1-E624-4958-A112-1FF7AD954A02}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{03C3BAB1-E624-4958-A112-1FF7AD954A02}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CEDED8C3-2731-449D-B54E-835D852BA6B5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CEDED8C3-2731-449D-B54E-835D852BA6B5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CEDED8C3-2731-449D-B54E-835D852BA6B5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CEDED8C3-2731-449D-B54E-835D852BA6B5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{853146CF-AB2D-443F-8838-661CCFDC776C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{853146CF-AB2D-443F-8838-661CCFDC776C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{853146CF-AB2D-443F-8838-661CCFDC776C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{853146CF-AB2D-443F-8838-661CCFDC776C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
