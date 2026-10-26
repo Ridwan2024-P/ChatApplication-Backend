@@ -35,9 +35,7 @@ var cs = builder.Configuration
     .GetConnectionString("DefaultConnection");
 var dbConnection =
     new Npgsql.NpgsqlConnectionStringBuilder(cs);
-Console.WriteLine($"Host: {dbConnection.Host}");
-Console.WriteLine($"Database: {dbConnection.Database}");
-Console.WriteLine($"Username: {dbConnection.Username}");
+
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
