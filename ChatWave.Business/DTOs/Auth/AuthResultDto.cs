@@ -1,4 +1,4 @@
-﻿namespace ChatWave.Business.DTOs.Auth;
+namespace ChatWave.Business.DTOs.Auth;
 
 public class AuthResultDto
 {
@@ -13,4 +13,8 @@ public class AuthResultDto
     public int? UserId { get; set; }
 
     public string? PhoneNumber { get; set; }
+
+    public string? AccessToken { get; set; }
+
+    public DateTime? AccessTokenExpiresUtc { get; set; }
 }

@@ -13,12 +13,18 @@ public class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly IOtpService _otpService;
     private readonly ISmsSender _smsSender;
+    private readonly ITokenService _tokenService;
 
-    public AuthService(IUserRepository userRepository, IOtpService otpService,ISmsSender smsSender)
+    public AuthService(
+        IUserRepository userRepository,
+        IOtpService otpService,
+        ISmsSender smsSender,
+        ITokenService tokenService)
     {
         _userRepository = userRepository;
         _otpService = otpService;
         _smsSender = smsSender;
+        _tokenService = tokenService;
     }
 
     public async Task<AuthResultDto> RequestOtpAsync(string phoneNumber, bool includeDebugOtp)
@@ -90,12 +96,16 @@ public class AuthService : IAuthService
             userId = await _userRepository.GetIdByPhoneAsync(phone);
         }
 
+        var token = _tokenService.CreateAccessToken(userId!.Value, phone);
+
         return new AuthResultDto
         {
             Success = true,
             Message = "Verified.",
             UserId = userId,
-            PhoneNumber = phone
+            PhoneNumber = phone,
+            AccessToken = token.AccessToken,
+            AccessTokenExpiresUtc = token.Expires
         };
     }
 
