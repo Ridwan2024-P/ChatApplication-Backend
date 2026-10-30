@@ -27,7 +27,15 @@ public class JwtTokenService : ITokenService
             ? m
             : 10;
 
-        var keyBytes = Convert.FromBase64String(key);
+        byte[] keyBytes;
+        try
+        {
+            keyBytes = Convert.FromBase64String(key);
+        }
+        catch (FormatException)
+        {
+            throw new InvalidOperationException("Jwt:Key must be a valid Base64 string.");
+        }
         if (keyBytes.Length < 32)
             throw new InvalidOperationException("JWT Key must contain at least 32 random bytes.");
 
@@ -42,9 +50,9 @@ public class JwtTokenService : ITokenService
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, userId.ToString()),
-            new(ClaimTypes.NameIdentifier, userId.ToString()),
-            new(ClaimTypes.MobilePhone, phoneNumber),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new("phone_number", phoneNumber),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(JwtRegisteredClaimNames.Iat, new DateTimeOffset(now).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 
         var credentials = new SigningCredentials(_signingKey, SecurityAlgorithms.HmacSha256);

@@ -3,9 +3,8 @@ using ChatWave.Business.Interfaces.Services;
 using ChatWave.Business.Services;
 using ChatWave.Data.Data;
 using ChatWave.Data.Repositories;
-using Microsoft.EntityFrameworkCore;
-using ChatWave.Business.Interfaces.Services;
 using ChatWave.Data.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 using Microsoft.IdentityModel.Tokens;
@@ -56,10 +55,21 @@ builder.Services.AddHttpClient<ISmsSender, MoceanSmsSender>(
     });
 
 
-var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("JWT Key is missing.");
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException(
+        "JWT Key is missing. Set it with: dotnet user-secrets set \"Jwt:Key\" \"<base64 of 32+ random bytes>\"");
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("JWT Issuer is missing.");
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? throw new InvalidOperationException("JWT Audience is missing.");
-var keyBytes = Convert.FromBase64String(jwtKey);
+
+byte[] keyBytes;
+try
+{
+    keyBytes = Convert.FromBase64String(jwtKey);
+}
+catch (FormatException)
+{
+    throw new InvalidOperationException("Jwt:Key must be a valid Base64 string.");
+}
 if (keyBytes.Length < 32)
 {
     throw new InvalidOperationException(
@@ -74,17 +84,22 @@ builder.Services.AddAuthentication(options =>
     })
     .AddJwtBearer(options =>
     {
+        // Keep claim names exactly as issued ("sub", "phone_number") - no silent remapping.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = signingKey,
-                ValidateIssuer = true,
-                ValidIssuer = jwtIssuer,
-                ValidateAudience = true,
-                ValidAudience = jwtAudience,
-                ValidateLifetime = true,
-                ClockSkew = TimeSpan.Zero
-            };
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = signingKey,
+            ValidateIssuer = true,
+            ValidIssuer = jwtIssuer,
+            ValidateAudience = true,
+            ValidAudience = jwtAudience,
+            ValidateLifetime = true,
+            RequireExpirationTime = true,
+            ValidAlgorithms = new[] { SecurityAlgorithms.HmacSha256 },
+            NameClaimType = "sub",
+            ClockSkew = TimeSpan.FromSeconds(30)
+        };
     });
 
 builder.Services.AddAuthorization();
@@ -94,11 +109,6 @@ builder.Services.AddScoped<IOtpService, OtpService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IMessageService, MessageService>();
-var cs = builder.Configuration
-    .GetConnectionString("DefaultConnection");
-var dbConnection =
-    new Npgsql.NpgsqlConnectionStringBuilder(cs);
-
 var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {

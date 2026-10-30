@@ -20,8 +20,8 @@ public class UsersController : ControllerBase
     [HttpGet("me")]
     public IActionResult Me()
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        var phone = User.FindFirstValue(ClaimTypes.MobilePhone);
+        var userId = User.FindFirstValue("sub");
+        var phone = User.FindFirstValue("phone_number");
 
         return Ok(new { userId, phoneNumber = phone });
     }
