@@ -14,6 +14,8 @@ public class ChatWaveDbContext : DbContext
     public DbSet<User> Users => Set<User>();
 
     public DbSet<PhoneOtp> PhoneOtps => Set<PhoneOtp>();
+    
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -47,6 +49,27 @@ public class ChatWaveDbContext : DbContext
                 x.PhoneNumber,
                 x.CreatedAtUtc
             });
+        });
+        
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasKey(x => x.Id);
+
+            entity.Property(x => x.TokenHash)
+                .HasMaxLength(64)
+                .IsRequired();
+
+            entity.Property<string>(x =>x.ReplacedByToken)
+                .HasMaxLength(64);
+
+            entity.HasIndex(x => x.TokenHash).IsUnique();
+            entity.HasIndex(x => x.FamilyId);
+            entity.HasIndex(x => x.UserId);
+
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
