@@ -14,17 +14,20 @@ public class AuthService : IAuthService
     private readonly IOtpService _otpService;
     private readonly ISmsSender _smsSender;
     private readonly ITokenService _tokenService;
+    private readonly IRefreshTokenRepository _refreshTokens;
 
     public AuthService(
         IUserRepository userRepository,
         IOtpService otpService,
         ISmsSender smsSender,
-        ITokenService tokenService)
+        ITokenService tokenService,
+        IRefreshTokenRepository refreshTokens)
     {
         _userRepository = userRepository;
         _otpService = otpService;
         _smsSender = smsSender;
         _tokenService = tokenService;
+        _refreshTokens = refreshTokens;
     }
 
     public async Task<AuthResultDto> RequestOtpAsync(string phoneNumber, bool includeDebugOtp)
@@ -95,19 +98,99 @@ public class AuthService : IAuthService
             await _userRepository.AddAsync(phone);
             userId = await _userRepository.GetIdByPhoneAsync(phone);
         }
+        
+        return await IssueTokensAsync(userId!.Value, phone, Guid.NewGuid(), "Verified.");
+    }
 
-        var token = _tokenService.CreateAccessToken(userId!.Value, phone);
+    public async Task<AuthResultDto> RefreshAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return Invalid();
+
+        var now = DateTime.UtcNow;
+        var hash = _tokenService.HashRefreshToken(refreshToken.Trim());
+        var stored = await _refreshTokens.GetByHashAsync(hash);
+
+        if (stored is null)
+            return Invalid();
+
+        
+        if (stored.RevokedAtUtc is not null)
+        {
+            await _refreshTokens.RevokeFamilyAsync(stored.FamilyId, now);
+            return Invalid();
+        }
+
+        if (stored.ExpiresAtUtc <= now)
+            return Invalid();
+
+        var phone = await _userRepository.GetPhoneByIdAsync(stored.UserId);
+        if (phone is null)
+            return Invalid();
+
+        var next = _tokenService.CreateRefreshToken();
+
+       
+        if (!await _refreshTokens.TryRevokeAsync(stored.Id, next.TokenHash, now))
+        {
+            await _refreshTokens.RevokeFamilyAsync(stored.FamilyId, now);
+            return Invalid();
+        }
+
+        return await IssueTokensAsync(stored.UserId, phone, stored.FamilyId, "Refreshed.", next);
+    }
+
+    public async Task LogoutAsync(string refreshToken)
+    {
+        if (string.IsNullOrWhiteSpace(refreshToken))
+            return;
+
+        var hash = _tokenService.HashRefreshToken(refreshToken.Trim());
+        var stored = await _refreshTokens.GetByHashAsync(hash);
+        if (stored is null)
+            return;
+
+        await _refreshTokens.RevokeFamilyAsync(stored.FamilyId, DateTime.UtcNow);
+    }
+
+    public Task LogoutAllAsync(int userId) =>
+        _refreshTokens.RevokeAllForUserAsync(userId, DateTime.UtcNow);
+
+    private async Task<AuthResultDto> IssueTokensAsync(
+        int userId,
+        string phone,
+        Guid familyId,
+        string message,
+        RefreshTokenDto? refresh = null)
+    {
+        var access = _tokenService.CreateAccessToken(userId, phone);
+        refresh ??= _tokenService.CreateRefreshToken();
+
+        await _refreshTokens.AddAsync(new RefreshTokenRecord(
+            Id: 0,
+            UserId: userId,
+            TokenHash: refresh.TokenHash,
+            FamilyId: familyId,
+            CreatedAtUtc: DateTime.UtcNow,
+            ExpiresAtUtc: refresh.Expires,
+            RevokedAtUtc: null,
+            ReplacedByTokenHash: null));
 
         return new AuthResultDto
         {
             Success = true,
-            Message = "Verified.",
+            Message = message,
             UserId = userId,
             PhoneNumber = phone,
-            AccessToken = token.AccessToken,
-            AccessTokenExpiresUtc = token.Expires
+            AccessToken = access.AccessToken,
+            AccessTokenExpiresUtc = access.Expires,
+            RefreshToken = refresh.Token,
+            RefreshTokenExpiresUtc = refresh.Expires
         };
     }
+
+    private static AuthResultDto Invalid() =>
+        new() { Success = false, Message = "Invalid or expired refresh token." };
 
     private static string Normalize(string? phone) =>
         (phone ?? string.Empty).Replace(" ", "").Replace("-", "").Trim();

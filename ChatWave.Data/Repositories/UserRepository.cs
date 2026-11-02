@@ -22,6 +22,14 @@ public class UserRepository : IUserRepository
             .FirstOrDefaultAsync();
     }
 
+    public async Task<string?> GetPhoneByIdAsync(int userId)
+    {
+        return await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => u.PhoneNumber)
+            .FirstOrDefaultAsync();
+    }
+
     public async Task AddAsync(string phoneNumber)
     {
         _context.Users.Add(new User { PhoneNumber = phoneNumber });

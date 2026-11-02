@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using ChatWave.Business.DTOs.Auth;
 using ChatWave.Business.Interfaces.Services;
 using Microsoft.Extensions.Configuration;
@@ -12,6 +14,7 @@ public class JwtTokenService : ITokenService
     private readonly string _issuer;
     private readonly string _audience;
     private readonly int _expiryMinutes;
+    private readonly int _refreshExpiryDays;
     private readonly SymmetricSecurityKey _signingKey;
 
     public JwtTokenService(IConfiguration configuration)
@@ -26,6 +29,10 @@ public class JwtTokenService : ITokenService
         _expiryMinutes = int.TryParse(configuration["Jwt:ExpiryMinutes"], out var m) && m > 0
             ? m
             : 10;
+
+        _refreshExpiryDays = int.TryParse(configuration["Jwt:RefreshTokenDays"], out var d) && d > 0
+            ? d
+            : 30;
 
         byte[] keyBytes;
         try
@@ -71,4 +78,20 @@ public class JwtTokenService : ITokenService
             Expires = expires
         };
     }
+
+    public RefreshTokenDto CreateRefreshToken()
+    {
+        var raw = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64))
+            .Replace('+', '-').Replace('/', '_').TrimEnd('=');
+
+        return new RefreshTokenDto
+        {
+            Token = raw,
+            TokenHash = HashRefreshToken(raw),
+            Expires = DateTime.UtcNow.AddDays(_refreshExpiryDays)
+        };
+    }
+
+    public string HashRefreshToken(string rawToken) =>
+        Convert.ToBase64String(SHA256.HashData(Encoding.UTF8.GetBytes(rawToken)));
 }

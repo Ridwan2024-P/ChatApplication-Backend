@@ -1,5 +1,7 @@
 using ChatWave.Business.DTOs.Auth;
 using ChatWave.Business.Interfaces.Services;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ChatWave.API.Controllers;
@@ -50,5 +52,34 @@ public class AuthController : ControllerBase
             return Unauthorized(result);
 
         return Ok(result);
+    }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh(RefreshRequestDto dto)
+    {
+        var result = await _auth.RefreshAsync(dto.RefreshToken);
+
+        if (!result.Success)
+            return Unauthorized(result);
+
+        return Ok(result);
+    }
+    
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(RefreshRequestDto dto)
+    {
+        await _auth.LogoutAsync(dto.RefreshToken);
+        return NoContent();
+    }
+    
+    [Authorize]
+    [HttpPost("logout-all")]
+    public async Task<IActionResult> LogoutAll()
+    {
+        if (!int.TryParse(User.FindFirstValue("sub"), out var userId))
+            return Unauthorized();
+
+        await _auth.LogoutAllAsync(userId);
+        return NoContent();
     }
 }

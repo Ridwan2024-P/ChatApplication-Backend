@@ -11,4 +11,10 @@ public interface IAuthService
     Task<AuthResultDto> VerifyOtpAsync(
         string phoneNumber,
         string otp);
+
+    Task<AuthResultDto> RefreshAsync(string refreshToken);
+
+    Task LogoutAsync(string refreshToken);
+
+    Task LogoutAllAsync(int userId);
 }

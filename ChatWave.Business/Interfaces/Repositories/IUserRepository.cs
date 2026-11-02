@@ -5,4 +5,7 @@ public interface IUserRepository
     Task<int?> GetIdByPhoneAsync(string phoneNumber);
 
     Task AddAsync(string phoneNumber);
+    
+    Task<string?> GetPhoneByIdAsync(int userId);
+    
 }
